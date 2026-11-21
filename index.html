@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>マイ御朱印帳</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f7f5f0;color:#333;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif}header{background:#8b3e35;color:#fff;padding:24px 18px}header h1{margin:0;font-size:24px}header p{margin:7px 0 0;font-size:13px}main{max-width:700px;margin:auto;padding:15px}.panel{background:#fff;border-radius:15px;padding:16px;margin-bottom:15px;box-shadow:0 2px 8px #0000000d}h2{font-size:18px;margin:0 0 14px}label{display:block;font-size:14px;font-weight:600;margin:12px 0 6px}input,textarea{width:100%;padding:11px;border:1px solid #ddd;border-radius:9px;font-size:16px;background:white}textarea{min-height:75px}button{border:0;border-radius:9px;padding:12px 15px;font-size:15px;font-weight:600}.save{background:#8b3e35;color:white;width:100%;margin-top:14px}.stats{display:flex;gap:10px}.stat{flex:1;text-align:center;background:#f5ece8;padding:12px;border-radius:10px}.stat strong{display:block;font-size:22px;color:#8b3e35}.stat span{font-size:12px}.preview{max-width:100%;max-height:220px;margin-top:10px;border-radius:8px;display:none}.entry{border:1px solid #eee;border-radius:12px;padding:12px;margin-top:12px}.entry img{width:100%;max-height:230px;object-fit:contain;background:#fafafa;border-radius:8px}.entry h3{margin:10px 0 5px}.meta{font-size:13px;color:#777}.memo{white-space:pre-wrap;font-size:14px}.delete{background:#eee;color:#555;margin-top:8px;padding:8px 12px;font-size:13px}.empty{text-align:center;color:#888;padding:18px}footer{text-align:center;color:#999;font-size:12px;padding:18px}
+</style>
+</head>
+<body>
+<header><h1>⛩️ マイ御朱印帳</h1><p>大切な参拝の記録を残そう</p></header>
+<main>
+<section class="panel"><div class="stats"><div class="stat"><strong id="count">0</strong><span>登録御朱印</span></div><div class="stat"><strong id="placeCount">0</strong><span>訪問先</span></div></div></section>
+<section class="panel"><h2>＋ 御朱印を登録</h2>
+<label for="name">神社・寺院名 *</label><input id="name" placeholder="例：明治神宮">
+<label for="date">参拝日</label><input id="date" type="date">
+<label for="pref">都道府県</label><input id="pref" placeholder="例：東京都">
+<label for="photo">御朱印の写真</label><input id="photo" type="file" accept="image/*"><img id="preview" class="preview" alt="写真プレビュー">
+<label for="memo">メモ</label><textarea id="memo" placeholder="参拝の思い出、由緒など"></textarea>
+<button class="save" id="save">御朱印を保存する</button></section>
+<section class="panel"><h2>📖 御朱印コレクション</h2><input id="search" placeholder="神社名・地域で検索"><div id="list"></div></section>
+</main><footer>マイ御朱印帳 ・ 自分専用記録</footer>
+<script>
+let items=[];try{items=JSON.parse(localStorage.getItem('goshuinRecords')||'[]')}catch(e){items=[]}
+let imageData='';const photo=document.getElementById('photo');
+photo.addEventListener('change',()=>{const f=photo.files[0];if(!f){imageData='';return}const reader=new FileReader();reader.onload=ev=>{imageData=ev.target.result;const p=document.getElementById('preview');p.src=imageData;p.style.display='block'};reader.readAsDataURL(f)});
+document.getElementById('save').addEventListener('click',()=>{const name=document.getElementById('name').value.trim();if(!name){alert('神社・寺院名を入力してください');return}items.unshift({id:Date.now(),name,date:document.getElementById('date').value,pref:document.getElementById('pref').value.trim(),photo:imageData,memo:document.getElementById('memo').value.trim()});try{localStorage.setItem('goshuinRecords',JSON.stringify(items))}catch(e){alert('保存できませんでした。写真の容量が大きい可能性があります。');return}document.getElementById('name').value='';document.getElementById('date').value='';document.getElementById('pref').value='';document.getElementById('memo').value='';photo.value='';imageData='';document.getElementById('preview').style.display='none';show();alert('御朱印を保存しました！')});
+document.getElementById('search').addEventListener('input',show);
+function safe(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function show(){document.getElementById('count').textContent=items.length;document.getElementById('placeCount').textContent=new Set(items.map(x=>x.name)).size;const q=document.getElementById('search').value.toLowerCase();const filtered=items.filter(x=>(x.name+' '+x.pref+' '+x.memo).toLowerCase().includes(q));const list=document.getElementById('list');if(!filtered.length){list.innerHTML='<div class="empty">まだ御朱印がありません。上から登録してみましょう。</div>';return}list.innerHTML=filtered.map(x=>`<div class="entry">${x.photo?`<img src="${x.photo}" alt="御朱印写真">`:''}<h3>${safe(x.name)}</h3><div class="meta">${safe(x.date||'参拝日未登録')} ${x.pref?'・'+safe(x.pref):''}</div>${x.memo?`<p class="memo">${safe(x.memo)}</p>`:''}<button class="delete" onclick="removeItem(${x.id})">削除</button></div>`).join('')}
+function removeItem(id){if(!confirm('この御朱印を削除しますか？'))return;items=items.filter(x=>x.id!==id);localStorage.setItem('goshuinRecords',JSON.stringify(items));show()}
+show();
+</script>
+</body>
+</html>
